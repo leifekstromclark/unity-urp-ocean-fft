@@ -157,12 +157,13 @@ public class OceanController : MonoBehaviour
         }
 
         // Prepare data for instance batches
-        instance_transforms.Clear()
+        instance_transforms.Clear();
 
         int rp_ind = 0;
+        int batch_start = 0;
         while (batch_start < transforms_acc.Count) {
-            int batch_start = rp_ind * INSTANCE_BATCH_SIZE;
-            instance_transforms.Add(transforms_acc.GetRange(batch_start, Mathf.Min(transforms_acc.Count - batch_start, INSTANCE_BATCH_SIZE)).ToArray());
+            int clipped_batch_size = Mathf.Min(transforms_acc.Count - batch_start, INSTANCE_BATCH_SIZE);
+            instance_transforms.Add(transforms_acc.GetRange(batch_start, clipped_batch_size).ToArray());
 
             // Add a new element to the list if we hit the end
             if (rp_ind >= instance_render_params.Count) {
@@ -171,10 +172,10 @@ public class OceanController : MonoBehaviour
                 instance_render_params.Add(rp);
             }
             // We want to reuse material property blocks in possible
-            instance_render_params[rp_ind].matProps.SetFloatArray("LOD_levels", LOD_levels_acc.GetRange(batch_start, Mathf.Min(transforms_acc.Count - batch_start, INSTANCE_BATCH_SIZE)).ToArray());
+            instance_render_params[rp_ind].matProps.SetFloatArray("LOD_levels", LOD_levels_acc.GetRange(batch_start, clipped_batch_size).ToArray());
 
-            instance_render_params.Add(rp);
             rp_ind++;
+            batch_start = rp_ind * INSTANCE_BATCH_SIZE;
         }
     }
 

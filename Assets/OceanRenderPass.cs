@@ -3,7 +3,7 @@ using UnityEngine.Rendering.Universal;
 using UnityEngine;
 using System;
 
-public class OceanRenderPass : ScriptableRenderPass, IDisposable
+public class OceanRenderPass : ScriptableRenderPass
 {
 
     private int N;
