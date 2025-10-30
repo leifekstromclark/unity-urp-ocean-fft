@@ -39,6 +39,14 @@ public class OceanController : MonoBehaviour
     private int LOD_depth;
     private const int SHADER_BUFFER_MAX_LOD = 100;
     private const int INSTANCE_BATCH_SIZE = 1023;
+    private enum MASK_FLAGS {
+        NONE = 0,
+        TL = 1,
+        TR = 1 << 1,
+        BL = 1 << 2,
+        BR = 1 << 3,
+        ALL = TL | TR | BL | BR
+    };
     private float[] LOD_ranges;
     private List<Matrix4x4[]> instance_transforms;
     private List<RenderParams> instance_render_params;
@@ -143,6 +151,7 @@ public class OceanController : MonoBehaviour
 
         List<Matrix4x4> transforms_acc = new List<Matrix4x4>();
         List<float> LOD_levels_acc = new List<float>();
+        List<float> masks_acc = new List<float>();
 
         // identify the grid of relevant cells around the view position and traverse their quadtrees
         float max_LOD_cell_size = min_LOD_cell_size * Mathf.Pow(2.0f, LOD_depth);
@@ -152,7 +161,7 @@ public class OceanController : MonoBehaviour
         int high_cell_z = (int)(Mathf.Floor((view_position.z + max_view_distance) / max_LOD_cell_size));
         for (int i=low_cell_z; i<=high_cell_z; i++) {
             for (int j=low_cell_x; j<=high_cell_x; j++) {
-                quadtree_traverse(new Vector2(j, i) * max_LOD_cell_size, LOD_depth, view_position, transforms_acc, LOD_levels_acc);
+                quadtree_traverse(new Vector2(j, i) * max_LOD_cell_size, LOD_depth, view_position, transforms_acc, LOD_levels_acc, masks_acc);
             }
         }
 
@@ -173,6 +182,7 @@ public class OceanController : MonoBehaviour
             }
             // We want to reuse material property blocks in possible
             instance_render_params[rp_ind].matProps.SetFloatArray("LOD_levels", LOD_levels_acc.GetRange(batch_start, clipped_batch_size).ToArray());
+            instance_render_params[rp_ind].matProps.SetFloatArray("masks", masks_acc.GetRange(batch_start, clipped_batch_size).ToArray());
 
             rp_ind++;
             batch_start = rp_ind * INSTANCE_BATCH_SIZE;
@@ -198,7 +208,7 @@ public class OceanController : MonoBehaviour
         return new Rect(rect.xMin - c_radius, rect.yMin, rect.width + c_radius * 2, rect.height).Contains(c_center);
     }
 
-    private bool quadtree_traverse(Vector2 position, int LOD_level, Vector3 view_position, List<Matrix4x4> transforms_acc, List<float> LOD_levels_acc) { // frustrum culling is also a good addition.
+    private bool quadtree_traverse(Vector2 position, int LOD_level, Vector3 view_position, List<Matrix4x4> transforms_acc, List<float> LOD_levels_acc, List<float> masks_acc) { // frustrum culling is also a good addition.
         if (Mathf.Abs(view_position.y) > LOD_ranges[LOD_level]) { // if the plane itself is not in view range
             return false;
         }
@@ -217,8 +227,9 @@ public class OceanController : MonoBehaviour
         Matrix4x4 scale = Matrix4x4.Scale(new Vector3(cell_size, 1.0f, cell_size));
 
         if (LOD_level == 0) {
-            transforms_acc.Add(translation * scale); // not sure the right order. test this.
+            transforms_acc.Add(translation * scale);
             LOD_levels_acc.Add(LOD_level);
+            masks_acc.Add((float)MASK_FLAGS.NONE);
             return true;
         }
 
@@ -228,34 +239,33 @@ public class OceanController : MonoBehaviour
         if (!intersect_next) {
             transforms_acc.Add(translation * scale);
             LOD_levels_acc.Add(LOD_level);
+            masks_acc.Add((float)MASK_FLAGS.NONE);
         } else {
 
-            bool tl_child = quadtree_traverse(position, LOD_level - 1, view_position, transforms_acc, LOD_levels_acc);
-            bool tr_child = quadtree_traverse(position + new Vector2(cell_size / 2.0f, 0.0f), LOD_level - 1, view_position, transforms_acc, LOD_levels_acc);
-            bool bl_child = quadtree_traverse(position + new Vector2(0.0f, cell_size / 2.0f), LOD_level - 1, view_position, transforms_acc, LOD_levels_acc);
-            bool br_child = quadtree_traverse(position + new Vector2(cell_size, cell_size) / 2.0f, LOD_level - 1, view_position, transforms_acc, LOD_levels_acc);
+            bool tl_child = quadtree_traverse(position, LOD_level - 1, view_position, transforms_acc, LOD_levels_acc, masks_acc);
+            bool tr_child = quadtree_traverse(position + new Vector2(cell_size / 2.0f, 0.0f), LOD_level - 1, view_position, transforms_acc, LOD_levels_acc, masks_acc);
+            bool bl_child = quadtree_traverse(position + new Vector2(0.0f, cell_size / 2.0f), LOD_level - 1, view_position, transforms_acc, LOD_levels_acc, masks_acc);
+            bool br_child = quadtree_traverse(position + new Vector2(cell_size, cell_size) / 2.0f, LOD_level - 1, view_position, transforms_acc, LOD_levels_acc, masks_acc);
 
-            Matrix4x4 child_scale = Matrix4x4.Scale(new Vector3(cell_size / 2.0f, 1.0f, cell_size / 2.0f));
+            MASK_FLAGS mask = MASK_FLAGS.NONE;
 
-            // if we covered for our children this is where we would do it. For now we will make them cover for themselves.
-            if (!tl_child) {
-                transforms_acc.Add(translation * child_scale);
-                LOD_levels_acc.Add(LOD_level - 1);
+            if (tl_child) {
+                mask = mask | MASK_FLAGS.TL;
             }
-            if (!tr_child) {
-                Matrix4x4 tr_translation = Matrix4x4.Translate(new Vector3(position.x + cell_size / 2.0f, 0.0f, position.y));
-                transforms_acc.Add(tr_translation * child_scale);
-                LOD_levels_acc.Add(LOD_level - 1);
+            if (tr_child) {
+                mask = mask | MASK_FLAGS.TR;
             }
-            if (!bl_child) {
-                Matrix4x4 bl_translation = Matrix4x4.Translate(new Vector3(position.x, 0.0f, position.y + cell_size / 2.0f));
-                transforms_acc.Add(bl_translation * child_scale);
-                LOD_levels_acc.Add(LOD_level - 1);
+            if (bl_child) {
+                mask = mask | MASK_FLAGS.BL;
             }
-            if (!br_child) {
-                Matrix4x4 br_translation = Matrix4x4.Translate(new Vector3(position.x + cell_size / 2.0f, 0.0f, position.y + cell_size / 2.0f));
-                transforms_acc.Add(br_translation * child_scale);
-                LOD_levels_acc.Add(LOD_level - 1);
+            if (br_child) {
+                mask = mask | MASK_FLAGS.BR;
+            }
+
+            if (mask != MASK_FLAGS.ALL) {
+                transforms_acc.Add(translation * scale);
+                LOD_levels_acc.Add(LOD_level);
+                masks_acc.Add((float)mask);
             }
         }
         return true;

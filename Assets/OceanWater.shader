@@ -79,6 +79,7 @@ Shader "OceanWater"
             int LOD_depth;
             float LOD_ranges[100]; // SHADER_BUFFER_MAX_LOD = 100 in ocean controller
             float LOD_levels[1023]; // INSTANCE_BATCH_SIZE = 1023 in ocean controller
+            float masks[1023]; // INSANCE_BATCH_SIZE = 1023 in ocean controller
             float morph_area;
             float min_LOD_cell_size;
             int mesh_res;
@@ -98,6 +99,7 @@ Shader "OceanWater"
                 float2 uv : TEXCOORD0;
                 float3 normalWS : TEXCOORD1;
                 float3 positionWS : TEXCOORD2;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             float2 solve_quadratic(float a, float b, float c) {
@@ -170,6 +172,7 @@ Shader "OceanWater"
                 OUT.positionWS = pos_ws;
                 OUT.positionHCS = TransformWorldToHClip(OUT.positionWS);
                 OUT.uv = IN.uv;
+                UNITY_TRANSFER_INSTANCE_ID(IN, OUT);
 
                 return OUT;
             }
@@ -211,8 +214,19 @@ Shader "OceanWater"
 
             half4 frag(Varyings IN) : SV_Target
             {
+                UNITY_SETUP_INSTANCE_ID(IN);
 
+                #ifdef INSTANCING_ON
                 // clip outside view distance
+                uint mask = masks[IN.instanceID];
+                if (mask % 2 && IN.uv.x < 0.5 && IN.uv.y < 0.5) discard;
+                mask /= 2;
+                if (mask % 2 && IN.uv.x > 0.5 && IN.uv.y < 0.5) discard;
+                mask /= 2;
+                if (mask % 2 && IN.uv.x < 0.5 && IN.uv.y > 0.5) discard;
+                mask /= 2;
+                if (mask % 2 && IN.uv.x > 0.5 && IN.uv.y > 0.5) discard;
+                #endif
                 
                 return half4(IN.uv.xy, 0.0, 1.0);
 
