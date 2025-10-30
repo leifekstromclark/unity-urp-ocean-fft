@@ -1,0 +1,28 @@
+fileFormatVersion: 2
+guid: 13ae62380638b0643af10fabf8755ee1
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - ButterflyComputeMaterial: {fileID: 2100000, guid: e50570a196a98d848b09f63627f554cd,
+      type: 2}
+  - ButterflyTextureMaterial: {fileID: 2100000, guid: d1a158f7841cbc64e8ba0e8b7e97daee,
+      type: 2}
+  - StaticSpectrumMaterial: {fileID: 2100000, guid: 48dec686e1aeee046a9710135bf93c5c,
+      type: 2}
+  - DynamicSpectrumMaterial: {fileID: 2100000, guid: 1bb28eec22c66874583aa735551871c5,
+      type: 2}
+  - InvertPermuteCollateMaterial: {fileID: 2100000, guid: 9339f5121112fef4788e00a5462b3897,
+      type: 2}
+  - AlphaBegoneMaterial: {fileID: 2100000, guid: f1b04b4472ee3f44c93f46d6cc50ff5c,
+      type: 2}
+  - ButterflyTexture: {instanceID: 0}
+  - HStaticTexture: {instanceID: 0}
+  - x_y_z_dzdz: {instanceID: 0}
+  - dxdx_dxdz_dydx_dydz: {instanceID: 0}
+  - GaussRandTex: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

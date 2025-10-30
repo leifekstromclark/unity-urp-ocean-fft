@@ -1,0 +1,24 @@
+fileFormatVersion: 2
+guid: 8bb9504968e1d5b40a83182caf7d48ed
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - butterfly_texture_shader: {fileID: 4800000, guid: b5593270c1d92d443b841ae11d3b5118,
+      type: 3}
+  - static_spectrum_shader: {fileID: 4800000, guid: d244365e70b2c1644b6dcf8ee673fd1c,
+      type: 3}
+  - dynamic_spectrum_shader: {fileID: 4800000, guid: a35bfc1cbdf772a45a595ce1ccd4da5b,
+      type: 3}
+  - butterfly_compute_shader: {fileID: 4800000, guid: 5b00f5de4067841409c5c3473065abe3,
+      type: 3}
+  - invert_permute_collate_shader: {fileID: 4800000, guid: ad893781e71d19640937b9891af426b0,
+      type: 3}
+  - foam_shader: {fileID: 4800000, guid: 61dda06e4bc5ef54793ea4ebbe011a5d, type: 3}
+  - ocean_water_material: {fileID: 2100000, guid: 434caa8a6c914204a826fd45e1051331,
+      type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
