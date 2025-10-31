@@ -185,7 +185,7 @@ public class OceanController : MonoBehaviour
             }
             // We want to reuse material property blocks in possible
             instance_render_params[rp_ind].matProps.SetFloatArray("LOD_levels", LOD_levels_acc.GetRange(batch_start, clipped_batch_size).ToArray());
-            instance_render_params[rp_ind].matProps.SetFloatArray("masks", masks_acc.GetRange(batch_start, clipped_batch_size).ToArray());
+            //instance_render_params[rp_ind].matProps.SetFloatArray("masks", masks_acc.GetRange(batch_start, clipped_batch_size).ToArray());
 
             rp_ind++;
             batch_start = rp_ind * INSTANCE_BATCH_SIZE;
@@ -232,7 +232,7 @@ public class OceanController : MonoBehaviour
         if (LOD_level == 0) {
             transforms_acc.Add(translation * scale);
             LOD_levels_acc.Add(LOD_level);
-            masks_acc.Add((float)MASK_FLAGS.NONE);
+            //masks_acc.Add((float)MASK_FLAGS.NONE);
             return true;
         }
 
@@ -242,7 +242,7 @@ public class OceanController : MonoBehaviour
         if (!intersect_next) {
             transforms_acc.Add(translation * scale);
             LOD_levels_acc.Add(LOD_level);
-            masks_acc.Add((float)MASK_FLAGS.NONE);
+            //masks_acc.Add((float)MASK_FLAGS.NONE);
         } else {
 
             bool tl_child = quadtree_traverse(position, LOD_level - 1, view_position, transforms_acc, LOD_levels_acc, masks_acc);
@@ -250,6 +250,8 @@ public class OceanController : MonoBehaviour
             bool bl_child = quadtree_traverse(position + new Vector2(0.0f, cell_size / 2.0f), LOD_level - 1, view_position, transforms_acc, LOD_levels_acc, masks_acc);
             bool br_child = quadtree_traverse(position + new Vector2(cell_size, cell_size) / 2.0f, LOD_level - 1, view_position, transforms_acc, LOD_levels_acc, masks_acc);
 
+            // UNCOMMENT BELOW IF USING MASKS
+            /*
             MASK_FLAGS mask = MASK_FLAGS.NONE;
 
             if (tl_child) {
@@ -269,6 +271,30 @@ public class OceanController : MonoBehaviour
                 transforms_acc.Add(translation * scale);
                 LOD_levels_acc.Add(LOD_level);
                 masks_acc.Add((float)mask);
+            }
+            */
+
+            Matrix4x4 child_scale = Matrix4x4.Scale(new Vector3(cell_size / 2.0f, 1.0f, cell_size / 2.0f));
+
+            // if we covered for our children this is where we would do it. For now we will make them cover for themselves.
+            if (!tl_child) {
+                transforms_acc.Add(translation * child_scale);
+                LOD_levels_acc.Add(LOD_level - 1);
+            }
+            if (!tr_child) {
+                Matrix4x4 tr_translation = Matrix4x4.Translate(new Vector3(position.x + cell_size / 2.0f, 0.0f, position.y));
+                transforms_acc.Add(tr_translation * child_scale);
+                LOD_levels_acc.Add(LOD_level - 1);
+            }
+            if (!bl_child) {
+                Matrix4x4 bl_translation = Matrix4x4.Translate(new Vector3(position.x, 0.0f, position.y + cell_size / 2.0f));
+                transforms_acc.Add(bl_translation * child_scale);
+                LOD_levels_acc.Add(LOD_level - 1);
+            }
+            if (!br_child) {
+                Matrix4x4 br_translation = Matrix4x4.Translate(new Vector3(position.x + cell_size / 2.0f, 0.0f, position.y + cell_size / 2.0f));
+                transforms_acc.Add(br_translation * child_scale);
+                LOD_levels_acc.Add(LOD_level - 1);
             }
         }
         return true;

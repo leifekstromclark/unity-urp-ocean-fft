@@ -73,7 +73,7 @@ Shader "OceanWater"
             int LOD_depth;
             float LOD_ranges[100]; // SHADER_BUFFER_MAX_LOD = 100 in ocean controller
             float LOD_levels[1023]; // INSTANCE_BATCH_SIZE = 1023 in ocean controller
-            float masks[1023]; // INSANCE_BATCH_SIZE = 1023 in ocean controller
+            //float masks[1023]; // INSANCE_BATCH_SIZE = 1023 in ocean controller
             float morph_area;
             float min_LOD_cell_size;
             int mesh_res;
@@ -203,9 +203,8 @@ Shader "OceanWater"
             half4 frag(Varyings IN) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(IN);
-
-                // ADD CLIPPING OUTSIDE VIEW DISTANCE?
                 
+                /*
                 #ifdef INSTANCING_ON
                 uint mask = masks[IN.instanceID];
                 if (mask % 2 && IN.uv.x < 0.5 && IN.uv.y < 0.5) discard;
@@ -216,6 +215,7 @@ Shader "OceanWater"
                 mask /= 2;
                 if (mask % 2 && IN.uv.x > 0.5 && IN.uv.y > 0.5) discard; // THIS CAUSES FUCKASS SEAMS CUZ OF MSAA
                 #endif
+                */
 
                 half4 water_color = half4(0.0, 0.1, 0.2, 1.0);
                 half4 foam_color = half4(1.0, 1.0, 1.0, 1.0);
@@ -239,7 +239,7 @@ Shader "OceanWater"
 
 
 
-                return diffuse_color * diffuse; //+ fresnel * (reflect_color + specular_color * specular);
+                return diffuse_color * diffuse + fresnel * (reflect_color + specular_color * specular);
             }
             ENDHLSL
         }
