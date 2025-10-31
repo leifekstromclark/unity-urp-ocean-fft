@@ -101,9 +101,7 @@ public class OceanRenderPass : ScriptableRenderPass
         ping.filterMode = FilterMode.Point;
         pong.filterMode = FilterMode.Point;
         temp_texture.filterMode = FilterMode.Point;
-        x_y_z_dzdz.filterMode = FilterMode.Point;
-        dxdx_dxdz_dydx_dydz.filterMode = FilterMode.Point;
-        // important: use bilinear for foam
+        // important: use bilinear for final output textures
     }
 
     private double box_muller(System.Random rand) {

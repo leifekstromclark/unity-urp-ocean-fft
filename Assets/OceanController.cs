@@ -71,7 +71,7 @@ public class OceanController : MonoBehaviour
 
         // prepare cascades
         for (int i=0; i < num_cascades; i++) {
-            float L = L_0 * Mathf.Pow(N / 2, i);
+            float L = L_0 * Mathf.Pow(N / 2, i); // im not confident in this . . . recheck it. remember one of the rows/columns is zeroed
             // use these parameters to set up cascades
         }
 
@@ -89,6 +89,9 @@ public class OceanController : MonoBehaviour
         ocean_water_material.SetFloat("min_LOD_cell_size", min_LOD_cell_size);
 
         ocean_water_material.SetInteger("N", 256);
+        ocean_water_material.SetFloat("L", L_0);
+        ocean_water_material.SetFloat("lambda_chop", -1.0f);
+        ocean_water_material.SetFloat("foam_threshold", 0.3f);
         ocean_water_material.SetTexture("x_y_z_dzdz", render_pass.x_y_z_dzdz);
         ocean_water_material.SetTexture("dxdx_dxdz_dydx_dydz", render_pass.dxdx_dxdz_dydx_dydz);
         ocean_water_material.SetTexture("foam_tex", render_pass.foam);

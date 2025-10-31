@@ -168,9 +168,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   N: 256
   num_cascades: 3
-  L_0: 500
-  wind: {x: 15, y: 0}
-  scale: 1
+  L_0: 1000
+  wind: {x: 20, y: 0}
+  scale: 1000
   spread_tightness: 2
   butterfly_texture_shader: {fileID: 4800000, guid: b5593270c1d92d443b841ae11d3b5118,
     type: 3}
@@ -185,9 +185,9 @@ MonoBehaviour:
   foam_shader: {fileID: 4800000, guid: 61dda06e4bc5ef54793ea4ebbe011a5d, type: 3}
   ocean_water_material: {fileID: 2100000, guid: 434caa8a6c914204a826fd45e1051331,
     type: 2}
-  max_view_distance: 500
+  max_view_distance: 1000
   LOD_range_multiplier: 6
-  mesh_instance_resolution: 4
+  mesh_instance_resolution: 16
   min_LOD_cell_size: 2
   morph_area: 0.2
 --- !u!1 &330585543
