@@ -72,7 +72,6 @@
     <None Include="Assets\StaticSpectrum.shader" />
     <None Include="Assets\DynamicSpectrum.shader" />
     <None Include="Assets\ButterflyTexture.shader" />
-    <None Include="Assets\AlphaBegone.shader" />
     <None Include="Assets\ButterflyCompute.shader" />
     <None Include="Assets\InvertPermuteCollate.shader" />
     <None Include="Assets\OceanWater.shader" />
