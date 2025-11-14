@@ -168,10 +168,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   N: 256
   num_cascades: 3
-  L_0: 500
-  wind: {x: 20, y: 0}
-  scale: 250
-  spread_tightness: 2
+  L_0: 1000
+  wind: {x: 0, y: 30}
+  scale: 1000
+  spread_tightness: 4
   butterfly_texture_shader: {fileID: 4800000, guid: b5593270c1d92d443b841ae11d3b5118,
     type: 3}
   static_spectrum_shader: {fileID: 4800000, guid: d244365e70b2c1644b6dcf8ee673fd1c,

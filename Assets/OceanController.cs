@@ -72,6 +72,7 @@ public class OceanController : MonoBehaviour
         // prepare cascades
         for (int i=0; i < num_cascades; i++) {
             float L = L_0 * Mathf.Pow(N / 2, i); // im not confident in this . . . recheck it. remember one of the rows/columns is zeroed
+            // ALSO I think maybe the invert shader should just divide by (N - 1)^2 rather than N^2
             // use these parameters to set up cascades
         }
 
