@@ -42,7 +42,7 @@ Shader "InvertPermuteCollate"
                 
                 float perm = 1.0 - 2.0 * ((coords.x + coords.y) % 2);
 
-                float4 final = perm * float4(tex2D(FirstInput, IN.uv).rb, tex2D(_MainTex, IN.uv).rb) / float(N * N);
+                float4 final = perm * float4(tex2D(FirstInput, IN.uv).rb, tex2D(_MainTex, IN.uv).rb) / float((N-1) * (N-1));
                 return final;
             }
             ENDCG

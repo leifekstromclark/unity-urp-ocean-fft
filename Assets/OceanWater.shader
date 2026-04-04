@@ -28,10 +28,9 @@ Shader "OceanWater"
 
     Properties
     {
-        // See if it works to remove some of these from the properties section
-        reflection_tex ("Reflection Skybox HDR", 2D) = "" {}
-        reflection_tint ("Reflection Skybox Tint", Color) = (.5, .5, .5, .5)
-        reflection_exposure ("Reflection Skybox Exposure", Range(0, 8)) = 1.0
+        ocean_color ("Ocean Color", Color) = (0.13, 0.22, 0.3, 1.0)
+        foam_color ("Foam Color", Color) = (1.0, 1.0, 1.0, 1.0)
+        ambient_intensity ("Ambient Intensity", Range(0, 2.0)) = 1.0
     }
 
     SubShader
@@ -47,9 +46,17 @@ Shader "OceanWater"
             #pragma multi_compile_instancing
             #pragma instancing_options assumeuniformscaling
 
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
+            #pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
+
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
             #define M_PI 3.1415926535897932384626433832795
+
+            half4 ocean_color;
+            half4 foam_color;
+            float ambient_intensity;
 
             // Wave-related properties
             int N;
@@ -59,15 +66,8 @@ Shader "OceanWater"
             TEXTURE2D(x_y_z_dzdz);
             TEXTURE2D(dxdx_dxdz_dydx_dydz);
             SamplerState sampler_linear_repeat;
-            TEXTURE2D(reflection_tex);
-            SAMPLER(sampler_reflection_tex);
             TEXTURE2D(foam_tex);
             SAMPLER(sampler_foam_tex);
-
-            // Reflection-related properties
-            half4 reflection_tex_HDR;
-            half4 reflection_tint;
-            half reflection_exposure;
             
             // LOD-related properties
             int LOD_depth;
@@ -165,81 +165,48 @@ Shader "OceanWater"
                 return OUT;
             }
 
-
-            float2 ToRadialCoords(float3 coords)
-            {
-                float3 normalizedCoords = normalize(coords);
-                float latitude = acos(normalizedCoords.y);
-                float longitude = atan2(normalizedCoords.z, normalizedCoords.x);
-                float2 sphereCoords = float2(longitude, latitude) * float2(0.5/M_PI, 1.0/M_PI);
-                return float2(0.5,1.0) - sphereCoords;
-            }
-
-            half3 DecodeHDR(half4 data, half4 decodeInstructions)
-            {
-                half alpha = decodeInstructions.w * (data.a - 1.0) + 1.0;
-
-                #if defined(UNITY_COLORSPACE_GAMMA)
-                    return (decodeInstructions.x * alpha) * data.rgb;
-                #else
-                    return (decodeInstructions.x * pow(alpha, decodeInstructions.y)) * data.rgb;
-                #endif
-            }
-
-            half4 sample_skybox(float3 direction) {
-                float2 tex_coords = ToRadialCoords(direction);
-                half4 tex = SAMPLE_TEXTURE2D(reflection_tex, sampler_reflection_tex, tex_coords);
-                half3 c = DecodeHDR(tex, reflection_tex_HDR);
-                c = c * reflection_tint.rgb * half3(2.0, 2.0, 2.0);
-                c *= reflection_exposure;
-                return half4(c, 1.0);
-            }
-
-            float schlick_fresnel(float outer_index, float inner_index, float theta) {
+            float schlick_fresnel(float outer_index, float inner_index, float cos_theta) {
                 float R_0 = pow((outer_index - inner_index) / (outer_index + inner_index), 2);
-                return saturate(R_0 + (1 - R_0) * pow(1 - cos(theta), 5));
+                return saturate(R_0 + (1 - R_0) * pow(1 - cos_theta, 5));
             }
 
             half4 frag(Varyings IN) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(IN);
-                
-                /*
-                #ifdef INSTANCING_ON
-                uint mask = masks[IN.instanceID];
-                if (mask % 2 && IN.uv.x < 0.5 && IN.uv.y < 0.5) discard;
-                mask /= 2;
-                if (mask % 2 && IN.uv.x > 0.5 && IN.uv.y < 0.5) discard;
-                mask /= 2;
-                if (mask % 2 && IN.uv.x < 0.5 && IN.uv.y > 0.5) discard;
-                mask /= 2;
-                if (mask % 2 && IN.uv.x > 0.5 && IN.uv.y > 0.5) discard; // THIS CAUSES FUCKASS SEAMS CUZ OF MSAA
-                #endif
-                */
 
-                half4 water_color = half4(0.0, 0.1, 0.2, 1.0);
-                half4 foam_color = half4(1.0, 1.0, 1.0, 1.0);
-                half4 specular_color = half4(1.0, 1.0, 0.0, 1.0);
-                float3 light_dir = float3(0.0, 1.0, 0.0);
-                float3 view_dir = normalize(_WorldSpaceCameraPos + IN.positionWS);
+                float3 view_dir = normalize(_WorldSpaceCameraPos - IN.positionWS);
                 float3 normal = normalize(IN.normalWS);
-                float3 reflect_dir = -light_dir + 2 * dot(light_dir, normal) * normal;
-                float shininess = 5.0;
+                float3 reflect_dir = reflect(-view_dir, normal); //-view_dir + 2 * dot(view_dir, normal) * normal;
+                float smoothness = 1.0;
+                
+                float4 main_shadow_coords = mul(_MainLightWorldToShadow[ComputeCascadeIndex(IN.positionWS)], float4(IN.positionWS, 1.0));
+                Light main_light = GetMainLight();
+                half3 radiance = main_light.color * main_light.distanceAttenuation;
+                half shadow_fade = GetMainLightShadowFade(IN.positionWS);
+                radiance = 0.5 * (MainLightRealtimeShadow(main_shadow_coords) * radiance * shadow_fade + radiance * (1 - shadow_fade));
+                half3 diffuse = LightingLambert(radiance, main_light.direction, normal);
+                half3 specular = LightingSpecular(radiance, main_light.direction, normal, view_dir, half4(1.0, 1.0, 1.0, 1.0), smoothness);
+                
+                for (int i=0; i < GetAdditionalLightsCount(); i++) {
+                    Light light = GetAdditionalLight(i, IN.positionWS);
+                    radiance = light.color * light.distanceAttenuation;
+                    shadow_fade = GetAdditionalLightShadowFade(IN.positionWS);
+                    radiance = 0.5 * (AdditionalLightRealtimeShadow(i, IN.positionWS) * radiance * shadow_fade + radiance * (1 - shadow_fade));
+                    diffuse += LightingLambert(radiance, light.direction, normal);
+                    specular += LightingSpecular(radiance, light.direction, normal, view_dir, half4(1.0, 1.0, 1.0, 1.0), smoothness);
+                }
 
-                float diffuse = saturate(dot(normal, light_dir));
-                float specular = saturate(pow(dot(view_dir, reflect_dir), shininess));
+                float fresnel = schlick_fresnel(1.0, 1.33, dot(view_dir, normal));
+                float2 screenspaceUV = GetNormalizedScreenSpaceUV(IN.positionHCS);
+                half3 environment_reflections = GlossyEnvironmentReflection(reflect_dir, IN.positionWS, 1 - smoothness, 1, screenspaceUV);
+                half3 ambient = ambient_intensity * GlossyEnvironmentReflection(normal, IN.positionWS, 1, 1, screenspaceUV);
 
-
-                float fresnel = schlick_fresnel(1.0, 1.33, acos(dot(view_dir, normal)));
-
-                half4 reflect_color = sample_skybox(reflect_dir);
                 float foam = 0.0; //SAMPLE_TEXTURE2D(foam_tex, sampler_foam_tex, IN.uv).x;
-                float4 diffuse_color = water_color * (1.0 - foam) + foam_color * foam;
+                half3 diffuse_color = ocean_color.rgb * (1.0 - foam) + foam_color.rgb * foam;
                 fresnel *= 1.0 - foam;
 
 
-
-                return diffuse_color * diffuse + fresnel * (reflect_color + specular_color * specular);
+                return half4(diffuse_color * (ambient + diffuse) + fresnel * (environment_reflections * specular), 1.0);
             }
             ENDHLSL
         }

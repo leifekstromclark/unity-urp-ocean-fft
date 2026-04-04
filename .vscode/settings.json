@@ -51,5 +51,5 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "UnityURPOceanFFT.sln"
+    "dotnet.defaultSolution": "unity-urp-ocean-fft.sln"
 }
